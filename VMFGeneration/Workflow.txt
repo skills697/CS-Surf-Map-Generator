@@ -1,0 +1,65 @@
+﻿=========================
+Parameters:
+=========================
+
+- Name Parameter to give the map a name
+- Seed Parameter to make each generation unique (Similar to Minecraft world Generation)
+- Difficulty Parameter for the velcoity guesser to minimize/maximize ramp distance from ramp to ramp
+- Cluster Parameter for the amount of ramps that are generated based off the calculation of posible ramp placements.
+- RampCount Parameter to define a number of ramps in the map
+- AreaStart Parameter to define a start of the map
+- AreaEnd Parameter to define a end of the map
+- MapType Parameter to define if the map is Linear/Staged/Staged-Linear
+- Symmetry Parameter to define if a map is symetric or not
+
+=========================
+Structure of the .VMF:
+=========================
+
+	versioninfo{} // Details for Hammer about the map itself. This will likely be static.
+	visgroups{} // We can group ramps or parts of the map together. Ex. Staged map ramp grouping/start/end platform. This isn't necessary and can be left out.
+	world{} // This contains all brushes in the world.
+	entity{} // Player Spawns, Lighting, Fog, and Much more! We can also make ramps out of func detail which saves time and file size on compile. Also, this will be used in our reset trigger if the player fails.
+	hidden{} // Used for hiding brushes. Can be ignored for our use.
+	cameras{} // Ignore, used in Hammer for the viewports.
+	cordon{} // This is for encapsulating the world and is necessary. Can be calculated based off of max x y z distances then add 500 units to max.
+
+=========================
+Processes:
+=========================
+
+- Create the basics of the .vmf file (More details on the structure of a .vmf can be found here: https://developer.valvesoftware.com/wiki/VMF_(Valve_Map_Format) as many of the classes also contain more classes)
+	There are static variable that need to be set at the start of generation such as versioninfo{}
+	
+- Place a start platform and essential entities somewhere in the world
+	This placement needs to make sense as to not run into the boundries of the world limits.
+	The coordinates of this could possibly shift as the map is generated. We would need to shift everything in the world if we are going to extend out of bounds.
+	info_player_counterterrorist // This is for the terrorist spawn point
+	info_player_terrorist		 // This is for the counter terrorist spawn point
+	fog_controller				 // This is for in-game render distance
+	light_env					 // This is for world lighting
+	info_teleport_destination	 // This is the respawn point if a player fails
+
+- Generate posibilites for ramp placements
+	In the case that their are no prior ramps, use the start platform as the best guess and the max possibly strafe distance as well as choose an appropriate height.
+	Based off the last of the selected ramp, use the origins of the y value to make a guess at the velocity of the player to place the next ramp.
+	Player velocity needs to be continuously calculated throughout the map to determine ramp placement posibilities.
+	
+	- Choose a ramp from the directory
+	Based off the last origin of the platform/ramp, choose a ramp to follow from a directory of defined ramps. (Alternatively, for testing we could make a static ramp).
+
+- Choose the placement of the ramp/platform
+	Based off of the posibilities from the generation, choose a "best" ramp.
+	Based off the parameter "Cluster" we may need to choose multiple ramp options.
+
+- Choose the placement of the end platform
+	Based off of the placement of the prior ramp, choose an appropriate end platform.
+	Based off the parameter "RampCount" we need to choose when the map should end.
+	
+=========================
+Order Mapping:
+=========================
+
+Start Platform and Essential Entities -> Check possible ramp locations -> Choose a ramp for locations -> Pick one or more of the locations and place the ramp -> Repeat ramp generation until end
+
+Constantly update estimated player velocity and with estimating locations
